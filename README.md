@@ -1,243 +1,67 @@
 # Field Notes Backend
 
-Field Notes-এর জন্য একটি REST API backend। অ্যাপটি Spring Boot, Spring Security, Spring Data JPA এবং PostgreSQL দিয়ে তৈরি। এতে JWT authentication, customer/site/note management, photo upload এবং offline-first data sync রয়েছে।
+A REST API for managing field notes, customers, sites, photos, and offline data sync.
 
-## ফিচার
+## Stack
 
-- Email ও password দিয়ে account registration এবং login
-- JWT-নির্ভর stateless authentication
-- Customer, site এবং field note তৈরি/আপডেট/মুছে ফেলা
-- Note title, description, site name ও customer name দিয়ে search; status এবং site অনুযায়ী filter
-- JPG, JPEG, PNG ও WebP note photo upload
-- `since` cursor-ভিত্তিক incremental sync; soft-deleted record-ও sync response-এ পাওয়া যায়
-- Flyway দিয়ে database schema migration
-- Swagger UI / OpenAPI documentation
+- Java 17 and Spring Boot 3.3.5
+- PostgreSQL, Spring Data JPA, and Flyway
+- JWT authentication
 
-## ব্যবহৃত প্রযুক্তি
+## Setup
 
-| প্রযুক্তি | সংস্করণ / ব্যবহার |
-| --- | --- |
-| Java | 17 |
-| Spring Boot | 3.3.5 |
-| Maven | Build tool |
-| PostgreSQL | Database |
-| Flyway | Database migration |
-| JWT (JJWT) | Token authentication |
+Requirements: JDK 17+, Maven, and PostgreSQL.
 
-## প্রয়োজনীয়তা
-
-- JDK 17 বা তার পরের compatible JDK
-- Maven 3.6+
-- PostgreSQL server
-
-## লোকালি চালু করুন
-
-### 1. Database তৈরি
-
-PostgreSQL-এ একটি database তৈরি করুন:
+Create a database:
 
 ```sql
 CREATE DATABASE fieldnotes;
 ```
 
-Default configuration অনুযায়ী database connection:
-
-```text
-URL:      jdbc:postgresql://localhost:5432/fieldnotes
-Username: postgres
-Password: postgres
-```
-
-আপনার local database credentials আলাদা হলে নিচের environment variables সেট করুন।
-
-### 2. Environment variables সেট করুন (PowerShell)
+Set connection details as needed (defaults: `postgres` / `postgres`):
 
 ```powershell
 $env:DB_URL = "jdbc:postgresql://localhost:5432/fieldnotes"
 $env:DB_USER = "postgres"
-$env:DB_PASSWORD = "your-database-password"
-$env:JWT_SECRET = "replace-this-with-a-random-secret-of-at-least-32-bytes"
-$env:UPLOAD_DIR = "uploads"
+$env:DB_PASSWORD = "your-password"
+$env:JWT_SECRET = "use-a-secure-secret-of-at-least-32-bytes"
 ```
 
-`JWT_SECRET` production-এ অবশ্যই নিরাপদ, গোপন এবং কমপক্ষে ৩২ byte-এর হতে হবে। Source control-এ secret রাখবেন না। Default secret কেবল local development-এর জন্য।
-
-### 3. Application চালান
+Run the application:
 
 ```powershell
 mvn spring-boot:run
 ```
 
-অ্যাপটি `http://localhost:8080`-এ চালু হবে। Startup-এর সময় Flyway স্বয়ংক্রিয়ভাবে `src/main/resources/db/migration`-এর migration চালাবে।
+The API is available at `http://localhost:8080`. Flyway applies database migrations on startup. For production, set a secure `JWT_SECRET`; do not use the development default.
 
-### Build ও test
+Run tests and verification:
 
 ```powershell
 mvn clean verify
 ```
 
-## Configuration
-
-সব configuration `src/main/resources/application.yml` থেকে আসে। Environment variable দিয়ে default value override করা যায়।
-
-| Variable | Default | বিবরণ |
-| --- | --- | --- |
-| `DB_URL` | `jdbc:postgresql://localhost:5432/fieldnotes` | PostgreSQL JDBC URL |
-| `DB_USER` | `postgres` | Database username |
-| `DB_PASSWORD` | `postgres` | Database password |
-| `JWT_SECRET` | Development-only placeholder | JWT signing secret; production-এ পরিবর্তন করুন |
-| `UPLOAD_DIR` | `uploads` | Uploaded photo রাখার directory |
-
-JWT token-এর মেয়াদ ৭২০ ঘণ্টা। Multipart upload-এর সর্বোচ্চ file ও request size ১০ MB।
-
 ## API
 
-Base URL: `http://localhost:8080`
+Protected endpoints require `Authorization: Bearer <token>`.
 
-### Authentication
-
-| Method | Endpoint | বিবরণ | Authentication |
-| --- | --- | --- | --- |
-| `POST` | `/api/auth/register` | নতুন account তৈরি | প্রয়োজন নেই |
-| `POST` | `/api/auth/login` | Login করে JWT পাওয়া | প্রয়োজন নেই |
-
-Registration request:
-
-```json
-{
-  "name": "Alex Morgan",
-  "email": "alex@example.com",
-  "password": "change-me"
-}
-```
-
-Login request:
-
-```json
-{
-  "email": "alex@example.com",
-  "password": "change-me"
-}
-```
-
-দুই endpoint-ই token-সহ নিচের response shape দেয়:
-
-```json
-{
-  "token": "<jwt>",
-  "userId": 1,
-  "name": "Alex Morgan",
-  "email": "alex@example.com"
-}
-```
-
-Protected endpoint-গুলোতে token পাঠান:
-
-```http
-Authorization: Bearer <jwt>
-```
-
-### Customers
-
-| Method | Endpoint | বিবরণ |
+| Method | Endpoint | Description |
 | --- | --- | --- |
-| `GET` | `/api/customers` | নিজের customer-দের তালিকা |
-| `PUT` | `/api/customers/{id}` | UUID দিয়ে customer তৈরি বা আপডেট |
-| `DELETE` | `/api/customers/{id}` | Customer soft-delete |
+| `POST` | `/api/auth/register` | Register an account |
+| `POST` | `/api/auth/login` | Log in and receive a JWT |
+| `GET` | `/api/customers` | List customers |
+| `PUT` / `DELETE` | `/api/customers/{id}` | Create/update or delete a customer |
+| `GET` | `/api/sites?customerId={uuid}` | List sites; optionally filter by customer |
+| `PUT` / `DELETE` | `/api/sites/{id}` | Create/update or delete a site |
+| `GET` | `/api/notes?q={text}&status={status}&siteId={uuid}` | Search and filter notes |
+| `PUT` / `DELETE` | `/api/notes/{id}` | Create/update or delete a note |
+| `POST` | `/api/notes/{id}/photo` | Upload a photo (`multipart/form-data`, field `file`) |
+| `GET` | `/api/photos/{filename}` | Retrieve a photo |
+| `GET` | `/api/sync/pull?since={timestamp}` | Pull changes since an ISO-8601 timestamp |
 
-### Sites
+IDs are UUIDs. Deletes are soft deletes; sync includes deleted records. Note statuses are `DRAFT`, `IN_PROGRESS`, and `COMPLETED`. Photo uploads accept JPG, JPEG, PNG, or WebP up to 10 MB.
 
-| Method | Endpoint | বিবরণ |
-| --- | --- | --- |
-| `GET` | `/api/sites` | নিজের site-গুলোর তালিকা |
-| `GET` | `/api/sites?customerId={uuid}` | Customer অনুযায়ী site filter |
-| `PUT` | `/api/sites/{id}` | UUID দিয়ে site তৈরি বা আপডেট |
-| `DELETE` | `/api/sites/{id}` | Site soft-delete |
+## API docs
 
-### Notes ও photos
-
-| Method | Endpoint | বিবরণ |
-| --- | --- | --- |
-| `GET` | `/api/notes` | নিজের active note-গুলো খোঁজা / তালিকা |
-| `PUT` | `/api/notes/{id}` | UUID দিয়ে note তৈরি বা আপডেট |
-| `DELETE` | `/api/notes/{id}` | Note soft-delete |
-| `POST` | `/api/notes/{id}/photo` | Note photo upload (`multipart/form-data`, field: `file`) |
-| `GET` | `/api/photos/{filename}` | Photo দেখা |
-
-`GET /api/notes` optional query parameters:
-
-| Parameter | Example | Purpose |
-| --- | --- | --- |
-| `q` | `?q=bridge` | Title, description, site name ও customer name-এ search |
-| `status` | `?status=IN_PROGRESS` | Note status দিয়ে filter |
-| `siteId` | `?siteId=550e8400-e29b-41d4-a716-446655440000` | Site দিয়ে filter |
-
-সম্ভাব্য note status: `DRAFT`, `IN_PROGRESS`, `COMPLETED`।
-
-### Sync
-
-| Method | Endpoint | বিবরণ |
-| --- | --- | --- |
-| `GET` | `/api/sync/pull` | সব পরিবর্তিত data sync; `since` না দিলে শুরু থেকে |
-| `GET` | `/api/sync/pull?since={instant}` | নির্দিষ্ট timestamp-এর পরের পরিবর্তন sync |
-
-`since` অবশ্যই ISO-8601 timestamp হতে হবে, যেমন `2026-01-01T00:00:00Z`। Response-এ `serverTime`, `customers`, `sites` ও `notes` থাকে। পরবর্তী sync-এর cursor হিসেবে আগের response-এর `serverTime` ব্যবহার করুন। Deleted row-গুলোও tombstone (`deleted: true`) হিসেবে আসে, যাতে অন্য device-এ সেগুলো সরানো যায়।
-
-## Request / response নোট
-
-- Customer, site ও note-এর `id` হলো UUID। `PUT` endpoint-গুলো একই ID-তে create অথবা update করে—offline-created record sync করার উপযোগী।
-- Write request-এ `updatedAt` দিতে হবে; customer এবং site-এর ক্ষেত্রে `deleted` field-ও DTO-র অংশ। Note-এর `noteDateTime`, `status` ও `siteId` প্রয়োজনীয়।
-- `siteName`, `customerId`, `customerName` এবং `photoUrl` response-এ server-এ তৈরি হয়; write করার সময় read-only field হিসেবে বিবেচনা করুন।
-- Update-এ server-এর বর্তমান `updatedAt` request-এর চেয়ে নতুন হলে বিদ্যমান record ফেরত দেওয়া হয়।
-- `DELETE` soft-delete করে; sync API মুছে ফেলা record-ও ফেরত দেয়।
-- সব business data authenticated user অনুযায়ী আলাদা রাখা হয়।
-- Photo upload-এর অনুমোদিত extension: `.jpg`, `.jpeg`, `.png`, `.webp`; ফাইলের সর্বোচ্চ আকার ১০ MB।
-- সাধারণ response JSON। Photo upload-এ `multipart/form-data` ব্যবহার করুন।
-
-### Note request উদাহরণ
-
-```json
-{
-  "id": "550e8400-e29b-41d4-a716-446655440001",
-  "siteId": "550e8400-e29b-41d4-a716-446655440002",
-  "siteName": null,
-  "customerId": null,
-  "customerName": null,
-  "title": "Foundation inspection",
-  "description": "Checked the north-side foundation.",
-  "latitude": 23.8103,
-  "longitude": 90.4125,
-  "noteDateTime": "2026-10-12T10:00:00Z",
-  "status": "IN_PROGRESS",
-  "photoUrl": null,
-  "updatedAt": "2026-10-12T10:00:00Z",
-  "deleted": false
-}
-```
-
-## Swagger / OpenAPI
-
-অ্যাপ চালু থাকার পর:
-
-- Swagger UI: [http://localhost:8080/swagger-ui.html](http://localhost:8080/swagger-ui.html)
-- OpenAPI JSON: [http://localhost:8080/v3/api-docs](http://localhost:8080/v3/api-docs)
-
-## Project structure
-
-```text
-src/
-├── main/
-│   ├── java/com/fieldnotes/
-│   │   ├── application/       # Services এবং DTO
-│   │   ├── domain/            # Domain models এবং repositories
-│   │   ├── infrastructure/   # Security ও JWT configuration
-│   │   └── presentation/     # REST controllers ও API exceptions
-│   └── resources/
-│       ├── application.yml
-│       └── db/migration/      # Flyway SQL migrations
-└── test/                      # Unit tests
-```
-
-## CORS
-
-বর্তমান configuration-এ browser client-এর জন্য `http://localhost:*` এবং `http://127.0.0.1:*` origin অনুমোদিত। অন্য origin দরকার হলে `SecurityConfig`-এর CORS configuration update করতে হবে।
+- Swagger UI: `http://localhost:8080/swagger-ui.html`
+- OpenAPI JSON: `http://localhost:8080/v3/api-docs`

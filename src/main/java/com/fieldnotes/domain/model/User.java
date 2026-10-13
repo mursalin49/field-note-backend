@@ -17,6 +17,8 @@ public class User {
     private String passwordHash;
     @Column(nullable = false)
     private String name;
+    @Column(name = "profile_photo_filename", length = 100)
+    private String profilePhotoFilename;
     @Column(nullable = false)
     private Instant createdAt = Instant.now();
 }

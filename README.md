@@ -49,6 +49,10 @@ Protected endpoints require `Authorization: Bearer <token>`.
 | --- | --- | --- |
 | `POST` | `/api/auth/register` | Register an account |
 | `POST` | `/api/auth/login` | Log in and receive a JWT |
+| `GET` | `/api/profile` | Get the authenticated user's profile |
+| `POST` | `/api/profile/photo` | Upload or replace the profile photo |
+| `DELETE` | `/api/profile/photo` | Remove the profile photo |
+| `GET` | `/api/profile/photo` | Download the authenticated user's profile photo |
 | `GET` | `/api/customers` | List customers |
 | `PUT` / `DELETE` | `/api/customers/{id}` | Create/update or delete a customer |
 | `GET` | `/api/sites?customerId={uuid}` | List sites; optionally filter by customer |
@@ -65,3 +69,52 @@ IDs are UUIDs. Deletes are soft deletes; sync includes deleted records. Note sta
 
 - Swagger UI: `http://localhost:8080/swagger-ui.html`
 - OpenAPI JSON: `http://localhost:8080/v3/api-docs`
+
+## Profile photos
+
+The profile photo is optional. Registration without a photo continues to use the JSON request:
+
+```json
+{
+  "name": "Sam Example",
+  "email": "sam@example.com",
+  "password": "example-password"
+}
+```
+
+Registration with a photo uses `multipart/form-data` fields `name`, `email`, `password`, and optional `profilePhoto`. Login and either registration mode return the JWT session and a nullable `profilePhotoUrl`.
+
+Authenticated profile operations use the same bearer JWT as the rest of the API:
+
+```http
+GET /api/profile
+Authorization: Bearer <token>
+```
+
+```json
+{
+  "userId": 42,
+  "name": "Sam Example",
+  "email": "sam@example.com",
+  "profilePhotoUrl": "/api/profile/photo?v=<stored-filename>"
+}
+```
+
+Upload, replace, and remove a photo:
+
+```http
+POST /api/profile/photo
+Authorization: Bearer <token>
+Content-Type: multipart/form-data
+
+file=<image>
+```
+
+```http
+DELETE /api/profile/photo
+Authorization: Bearer <token>
+```
+
+Profile image endpoints are scoped to the authenticated user; clients cannot request another user's image by supplying an arbitrary filename. JPG/JPEG, PNG, and WebP are accepted up to 5 MB. Images are stored in the configured `app.upload-dir` (default `uploads`). Flyway migration `V2__user_profile_photo.sql` adds the nullable profile image filename column to existing databases. Back up and persist the upload directory in deployments: database backups alone do not include image files.
+
+The Flutter app caches downloaded profile images locally for offline display. Changing or deleting the image requires a network connection; signing in on another device downloads the account's current image.

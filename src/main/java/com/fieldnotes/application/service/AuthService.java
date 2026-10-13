@@ -10,6 +10,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.io.IOException;
 
 @Service
 @RequiredArgsConstructor
@@ -17,16 +20,32 @@ public class AuthService {
     private final UserRepository users;
     private final PasswordEncoder encoder;
     private final JwtService jwt;
+    private final ProfilePhotoService profilePhotos;
 
     @Transactional
     public AuthResponse register(RegisterRequest r) {
+        return register(r, null);
+    }
+
+    @Transactional
+    public AuthResponse register(RegisterRequest r, MultipartFile profilePhoto) {
         String email = r.email().trim().toLowerCase();
         if (users.existsByEmail(email)) throw new ApiException(HttpStatus.CONFLICT, "Email is already registered");
         User u = new User();
         u.setEmail(email);
         u.setName(r.name().trim());
         u.setPasswordHash(encoder.encode(r.password()));
-        return response(users.save(u));
+        u = users.save(u);
+        if (profilePhoto != null && !profilePhoto.isEmpty()) {
+            try {
+                profilePhotos.upload(u.getId(), profilePhoto);
+            } catch (IOException e) {
+                throw new ApiException(HttpStatus.INTERNAL_SERVER_ERROR,
+                        "Could not save profile photo");
+            }
+            u = users.findById(u.getId()).orElseThrow();
+        }
+        return response(u);
     }
 
     @Transactional(readOnly = true)
@@ -38,6 +57,10 @@ public class AuthService {
     }
 
     private AuthResponse response(User u) {
-        return new AuthResponse(jwt.generate(u.getId()), u.getId(), u.getName(), u.getEmail());
+        String profilePhotoUrl = u.getProfilePhotoFilename() == null
+                ? null
+                : "/api/profile/photo?v=" + u.getProfilePhotoFilename();
+        return new AuthResponse(jwt.generate(u.getId()), u.getId(), u.getName(), u.getEmail(),
+                profilePhotoUrl);
     }
 }

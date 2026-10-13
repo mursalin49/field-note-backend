@@ -8,6 +8,7 @@ com\fieldnotes\domain\model\Site.class
 com\fieldnotes\application\dto\Dtos$SiteDto.class
 com\fieldnotes\domain\model\User.class
 com\fieldnotes\domain\model\Customer.class
+com\fieldnotes\presentation\controller\ProfileController.class
 com\fieldnotes\application\service\SiteService.class
 com\fieldnotes\presentation\exception\ApiException.class
 com\fieldnotes\application\service\AuthService.class

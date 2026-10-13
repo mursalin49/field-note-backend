@@ -2,6 +2,7 @@ H:\field-notes\backend\src\main\java\com\fieldnotes\application\dto\Dtos.java
 H:\field-notes\backend\src\main\java\com\fieldnotes\application\service\AuthService.java
 H:\field-notes\backend\src\main\java\com\fieldnotes\application\service\CustomerService.java
 H:\field-notes\backend\src\main\java\com\fieldnotes\application\service\NoteService.java
+H:\field-notes\backend\src\main\java\com\fieldnotes\application\service\ProfilePhotoService.java
 H:\field-notes\backend\src\main\java\com\fieldnotes\application\service\SiteService.java
 H:\field-notes\backend\src\main\java\com\fieldnotes\application\service\SyncService.java
 H:\field-notes\backend\src\main\java\com\fieldnotes\domain\model\Customer.java
@@ -21,6 +22,7 @@ H:\field-notes\backend\src\main\java\com\fieldnotes\infrastructure\security\Secu
 H:\field-notes\backend\src\main\java\com\fieldnotes\presentation\controller\AuthController.java
 H:\field-notes\backend\src\main\java\com\fieldnotes\presentation\controller\CustomerController.java
 H:\field-notes\backend\src\main\java\com\fieldnotes\presentation\controller\NoteController.java
+H:\field-notes\backend\src\main\java\com\fieldnotes\presentation\controller\ProfileController.java
 H:\field-notes\backend\src\main\java\com\fieldnotes\presentation\controller\SiteController.java
 H:\field-notes\backend\src\main\java\com\fieldnotes\presentation\controller\SyncController.java
 H:\field-notes\backend\src\main\java\com\fieldnotes\presentation\exception\ApiException.java

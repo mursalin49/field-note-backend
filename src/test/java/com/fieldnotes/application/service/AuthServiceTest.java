@@ -30,12 +30,13 @@ class AuthServiceTest {
     @Mock private UserRepository users;
     @Mock private PasswordEncoder encoder;
     @Mock private JwtService jwt;
+    @Mock private ProfilePhotoService profilePhotos;
 
     private AuthService service;
 
     @BeforeEach
     void setUp() {
-        service = new AuthService(users, encoder, jwt);
+        service = new AuthService(users, encoder, jwt, profilePhotos);
     }
 
     @Test

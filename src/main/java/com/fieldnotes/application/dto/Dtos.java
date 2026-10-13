@@ -18,7 +18,11 @@ public final class Dtos {
 
     public record LoginRequest(@NotBlank String email, @NotBlank String password) {}
 
-    public record AuthResponse(String token, Long userId, String name, String email) {}
+    public record AuthResponse(String token, Long userId, String name, String email,
+                               String profilePhotoUrl) {}
+
+    public record ProfileResponse(Long userId, String name, String email,
+                                  String profilePhotoUrl) {}
 
     public record CustomerDto(UUID id, @NotBlank String name, String contactInfo,
                               @NotNull Instant updatedAt, boolean deleted) {
